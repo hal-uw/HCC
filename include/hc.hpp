@@ -643,31 +643,31 @@ private:
     // non-tiled parallel_for_each
     // generic version
     template <int N, typename Kernel> friend
-        completion_future parallel_for_each(const accelerator_view&, const extent<N>&, const Kernel&);
+        completion_future parallel_for_each(const accelerator_view&, const extent<N>&, const Kernel&, uint32_t);
   
     // 1D specialization
     template <typename Kernel> friend
-        completion_future parallel_for_each(const accelerator_view&, const extent<1>&, const Kernel&);
+        completion_future parallel_for_each(const accelerator_view&, const extent<1>&, const Kernel&, uint32_t);
   
     // 2D specialization
     template <typename Kernel> friend
-        completion_future parallel_for_each(const accelerator_view&, const extent<2>&, const Kernel&);
+        completion_future parallel_for_each(const accelerator_view&, const extent<2>&, const Kernel&, uint32_t);
   
     // 3D specialization
     template <typename Kernel> friend
-        completion_future parallel_for_each(const accelerator_view&, const extent<3>&, const Kernel&);
+        completion_future parallel_for_each(const accelerator_view&, const extent<3>&, const Kernel&, uint32_t);
   
     // tiled parallel_for_each, 3D version
     template <typename Kernel> friend
-        completion_future parallel_for_each(const accelerator_view&, const tiled_extent<3>&, const Kernel&);
+        completion_future parallel_for_each(const accelerator_view&, const tiled_extent<3>&, const Kernel&, uint32_t);
   
     // tiled parallel_for_each, 2D version
     template <typename Kernel> friend
-        completion_future parallel_for_each(const accelerator_view&, const tiled_extent<2>&, const Kernel&);
+        completion_future parallel_for_each(const accelerator_view&, const tiled_extent<2>&, const Kernel&, uint32_t);
   
     // tiled parallel_for_each, 1D version
     template <typename Kernel> friend
-        completion_future parallel_for_each(const accelerator_view&, const tiled_extent<1>&, const Kernel&);
+        completion_future parallel_for_each(const accelerator_view&, const tiled_extent<1>&, const Kernel&, uint32_t);
 
 
 #if __KALMAR_ACCELERATOR__ == 2 || __KALMAR_CPU__ == 2
@@ -1386,31 +1386,31 @@ private:
     // non-tiled parallel_for_each
     // generic version
     template <int N, typename Kernel> friend
-        completion_future parallel_for_each(const accelerator_view&, const extent<N>&, const Kernel&);
+        completion_future parallel_for_each(const accelerator_view&, const extent<N>&, const Kernel&, uint32_t);
 
     // 1D specialization
     template <typename Kernel> friend
-        completion_future parallel_for_each(const accelerator_view&, const extent<1>&, const Kernel&);
+        completion_future parallel_for_each(const accelerator_view&, const extent<1>&, const Kernel&, uint32_t);
 
     // 2D specialization
     template <typename Kernel> friend
-        completion_future parallel_for_each(const accelerator_view&, const extent<2>&, const Kernel&);
+        completion_future parallel_for_each(const accelerator_view&, const extent<2>&, const Kernel&, uint32_t);
 
     // 3D specialization
     template <typename Kernel> friend
-        completion_future parallel_for_each(const accelerator_view&, const extent<3>&, const Kernel&);
+        completion_future parallel_for_each(const accelerator_view&, const extent<3>&, const Kernel&, uint32_t);
 
     // tiled parallel_for_each, 3D version
     template <typename Kernel> friend
-        completion_future parallel_for_each(const accelerator_view&, const tiled_extent<3>&, const Kernel&);
+        completion_future parallel_for_each(const accelerator_view&, const tiled_extent<3>&, const Kernel&, uint32_t);
 
     // tiled parallel_for_each, 2D version
     template <typename Kernel> friend
-        completion_future parallel_for_each(const accelerator_view&, const tiled_extent<2>&, const Kernel&);
+        completion_future parallel_for_each(const accelerator_view&, const tiled_extent<2>&, const Kernel&, uint32_t);
 
     // tiled parallel_for_each, 1D version
     template <typename Kernel> friend
-        completion_future parallel_for_each(const accelerator_view&, const tiled_extent<1>&, const Kernel&);
+        completion_future parallel_for_each(const accelerator_view&, const tiled_extent<1>&, const Kernel&, uint32_t);
 
     // copy_async
     template <typename T, int N> friend
@@ -3515,7 +3515,7 @@ private:
     {}
 
     template<typename Kernel> friend
-        completion_future parallel_for_each(const accelerator_view&, const tiled_extent<N>&, const Kernel&);
+        completion_future parallel_for_each(const accelerator_view&, const tiled_extent<N>&, const Kernel&, uint32_t);
 
 #if __KALMAR_ACCELERATOR__ == 2 || __KALMAR_CPU__ == 2
     template<typename K> friend
@@ -3614,7 +3614,7 @@ private:
     {}
 
     template<typename Kernel> friend
-        completion_future parallel_for_each(const accelerator_view&, const tiled_extent<1>&, const Kernel&);
+        completion_future parallel_for_each(const accelerator_view&, const tiled_extent<1>&, const Kernel&, uint32_t);
 
 #if __KALMAR_ACCELERATOR__ == 2 || __KALMAR_CPU__ == 2
     template<typename K> friend
@@ -3713,7 +3713,7 @@ private:
     {}
 
     template<typename Kernel> friend
-        completion_future parallel_for_each(const accelerator_view&, const tiled_extent<2>&, const Kernel&);
+        completion_future parallel_for_each(const accelerator_view&, const tiled_extent<2>&, const Kernel&, uint32_t);
 
 #if __KALMAR_ACCELERATOR__ == 2 || __KALMAR_CPU__ == 2
     template<typename K> friend
@@ -7486,35 +7486,39 @@ extern "C" unsigned int __atomic_wrapdec(unsigned int* address, unsigned int val
 // ------------------------------------------------------------------------
 
 template <int N, typename Kernel>
-completion_future parallel_for_each(const accelerator_view&, const extent<N>&, const Kernel&);
+completion_future parallel_for_each(const accelerator_view&, const extent<N>&, const Kernel&, uint32_t);
 
 template <typename Kernel>
-completion_future parallel_for_each(const accelerator_view&, const tiled_extent<3>&, const Kernel&);
+completion_future parallel_for_each(const accelerator_view&, const tiled_extent<3>&, const Kernel&, uint32_t);
 
 template <typename Kernel>
-completion_future parallel_for_each(const accelerator_view&, const tiled_extent<2>&, const Kernel&);
+completion_future parallel_for_each(const accelerator_view&, const tiled_extent<2>&, const Kernel&, uint32_t);
 
 template <typename Kernel>
-completion_future parallel_for_each(const accelerator_view&, const tiled_extent<1>&, const Kernel&);
+completion_future parallel_for_each(const accelerator_view&, const tiled_extent<1>&, const Kernel&, uint32_t);
 
 template <int N, typename Kernel>
 completion_future parallel_for_each(const extent<N>& compute_domain, const Kernel& f) {
-    return parallel_for_each(accelerator::get_auto_selection_view(), compute_domain, f);
+    uint32_t lastKernel = 1;
+    return parallel_for_each(accelerator::get_auto_selection_view(), compute_domain, f, lastKernel);
 }
 
 template <typename Kernel>
 completion_future parallel_for_each(const tiled_extent<3>& compute_domain, const Kernel& f) {
-    return parallel_for_each(accelerator::get_auto_selection_view(), compute_domain, f);
+    uint32_t lastKernel = 1;
+    return parallel_for_each(accelerator::get_auto_selection_view(), compute_domain, f, lastKernel);
 }
 
 template <typename Kernel>
 completion_future parallel_for_each(const tiled_extent<2>& compute_domain, const Kernel& f) {
-    return parallel_for_each(accelerator::get_auto_selection_view(), compute_domain, f);
+    uint32_t lastKernel = 1;
+    return parallel_for_each(accelerator::get_auto_selection_view(), compute_domain, f, lastKernel);
 }
 
 template <typename Kernel>
 completion_future parallel_for_each(const tiled_extent<1>& compute_domain, const Kernel& f) {
-    return parallel_for_each(accelerator::get_auto_selection_view(), compute_domain, f);
+    uint32_t lastKernel = 1;
+    return parallel_for_each(accelerator::get_auto_selection_view(), compute_domain, f, lastKernel);
 }
 
 template <int N, typename Kernel, typename _Tp>
@@ -7561,7 +7565,7 @@ private:
 template <int N, typename Kernel>
 __attribute__((noinline,used)) completion_future parallel_for_each(
     const accelerator_view& av,
-    const extent<N>& compute_domain, const Kernel& f) __CPU__ __HC__ {
+    const extent<N>& compute_domain, const Kernel& f, uint32_t lastKernel) __CPU__ __HC__ {
 #if __KALMAR_ACCELERATOR__ != 1
     for(int i = 0 ; i < N ; i++)
     {
@@ -7585,7 +7589,7 @@ __attribute__((noinline,used)) completion_future parallel_for_each(
       throw runtime_exception(Kalmar::__errorMsg_UnsupportedAccelerator, E_FAIL);
     }
     const pfe_wrapper<N, Kernel> _pf(compute_domain, f);
-    return completion_future(Kalmar::mcw_cxxamp_launch_kernel_async<pfe_wrapper<N, Kernel>, 3>(av.pQueue, ext, NULL, _pf));
+    return completion_future(Kalmar::mcw_cxxamp_launch_kernel_async<pfe_wrapper<N, Kernel>, 3>(av.pQueue, ext, NULL, _pf, lastKernel));
 #else
 #if __KALMAR_ACCELERATOR__ == 2 || __KALMAR_CPU__ == 2
     int* foo1 = reinterpret_cast<int*>(&Kernel::__cxxamp_trampoline);
@@ -7603,7 +7607,7 @@ __attribute__((noinline,used)) completion_future parallel_for_each(
 //1D parallel_for_each, nontiled
 template <typename Kernel>
 __attribute__((noinline,used)) completion_future parallel_for_each(
-    const accelerator_view& av, const extent<1>& compute_domain, const Kernel& f) __CPU__ __HC__ {
+    const accelerator_view& av, const extent<1>& compute_domain, const Kernel& f, uint32_t lastKernel) __CPU__ __HC__ {
 #if __KALMAR_ACCELERATOR__ != 1
   // silently return in case the any dimension of the extent is 0
   if (compute_domain[0] == 0)
@@ -7622,7 +7626,7 @@ __attribute__((noinline,used)) completion_future parallel_for_each(
   if (av.get_accelerator().get_device_path() == L"cpu") {
     throw runtime_exception(Kalmar::__errorMsg_UnsupportedAccelerator, E_FAIL);
   }
-  return completion_future(Kalmar::mcw_cxxamp_launch_kernel_async<Kernel, 1>(av.pQueue, &ext, NULL, f));
+  return completion_future(Kalmar::mcw_cxxamp_launch_kernel_async<Kernel, 1>(av.pQueue, &ext, NULL, f, lastKernel));
 #else //if __KALMAR_ACCELERATOR__ != 1
   //to ensure functor has right operator() defined
   //this triggers the trampoline code being emitted
@@ -7638,7 +7642,7 @@ __attribute__((noinline,used)) completion_future parallel_for_each(
 //2D parallel_for_each, nontiled
 template <typename Kernel>
 __attribute__((noinline,used)) completion_future parallel_for_each(
-    const accelerator_view& av, const extent<2>& compute_domain, const Kernel& f) __CPU__ __HC__ {
+    const accelerator_view& av, const extent<2>& compute_domain, const Kernel& f, uint32_t lastKernel) __CPU__ __HC__ {
 #if __KALMAR_ACCELERATOR__ != 1
   // silently return in case the any dimension of the extent is 0
   if (compute_domain[0] == 0 || compute_domain[1] == 0)
@@ -7660,7 +7664,7 @@ __attribute__((noinline,used)) completion_future parallel_for_each(
   if (av.get_accelerator().get_device_path() == L"cpu") {
     throw runtime_exception(Kalmar::__errorMsg_UnsupportedAccelerator, E_FAIL);
   }
-  return completion_future(Kalmar::mcw_cxxamp_launch_kernel_async<Kernel, 2>(av.pQueue, ext, NULL, f));
+  return completion_future(Kalmar::mcw_cxxamp_launch_kernel_async<Kernel, 2>(av.pQueue, ext, NULL, f, lastKernel));
 #else //if __KALMAR_ACCELERATOR__ != 1
   //to ensure functor has right operator() defined
   //this triggers the trampoline code being emitted
@@ -7676,7 +7680,7 @@ __attribute__((noinline,used)) completion_future parallel_for_each(
 //3D parallel_for_each, nontiled
 template <typename Kernel>
 __attribute__((noinline,used)) completion_future parallel_for_each(
-    const accelerator_view& av, const extent<3>& compute_domain, const Kernel& f) __CPU__ __HC__ {
+    const accelerator_view& av, const extent<3>& compute_domain, const Kernel& f, uint32_t lastKernel) __CPU__ __HC__ {
 #if __KALMAR_ACCELERATOR__ != 1
   // silently return in case the any dimension of the extent is 0
   if (compute_domain[0] == 0 || compute_domain[1] == 0 || compute_domain[2] == 0)
@@ -7701,7 +7705,7 @@ __attribute__((noinline,used)) completion_future parallel_for_each(
   if (av.get_accelerator().get_device_path() == L"cpu") {
     throw runtime_exception(Kalmar::__errorMsg_UnsupportedAccelerator, E_FAIL);
   }
-  return completion_future(Kalmar::mcw_cxxamp_launch_kernel_async<Kernel, 3>(av.pQueue, ext, NULL, f));
+  return completion_future(Kalmar::mcw_cxxamp_launch_kernel_async<Kernel, 3>(av.pQueue, ext, NULL, f, lastKernel));
 #else //if __KALMAR_ACCELERATOR__ != 1
   //to ensure functor has right operator() defined
   //this triggers the trampoline code being emitted
@@ -7717,7 +7721,7 @@ __attribute__((noinline,used)) completion_future parallel_for_each(
 //1D parallel_for_each, tiled
 template <typename Kernel>
 __attribute__((noinline,used)) completion_future parallel_for_each(
-    const accelerator_view& av, const tiled_extent<1>& compute_domain, const Kernel& f) __CPU__ __HC__ {
+    const accelerator_view& av, const tiled_extent<1>& compute_domain, const Kernel& f, uint32_t lastKernel) __CPU__ __HC__ {
 #if __KALMAR_ACCELERATOR__ != 1
   // silently return in case the any dimension of the extent is 0
   if (compute_domain[0] == 0)
@@ -7738,7 +7742,7 @@ __attribute__((noinline,used)) completion_future parallel_for_each(
     throw runtime_exception(Kalmar::__errorMsg_UnsupportedAccelerator, E_FAIL);
   }
   void *kernel = Kalmar::mcw_cxxamp_get_kernel<Kernel>(av.pQueue, f);
-  return completion_future(Kalmar::mcw_cxxamp_execute_kernel_with_dynamic_group_memory_async<Kernel, 1>(av.pQueue, &ext, &tile, f, kernel, compute_domain.get_dynamic_group_segment_size()));
+  return completion_future(Kalmar::mcw_cxxamp_execute_kernel_with_dynamic_group_memory_async<Kernel, 1>(av.pQueue, &ext, &tile, f, kernel, compute_domain.get_dynamic_group_segment_size(), lastKernel));
 #else //if __KALMAR_ACCELERATOR__ != 1
   tiled_index<1> this_is_used_to_instantiate_the_right_index;
   //to ensure functor has right operator() defined
@@ -7755,7 +7759,7 @@ __attribute__((noinline,used)) completion_future parallel_for_each(
 //2D parallel_for_each, tiled
 template <typename Kernel>
 __attribute__((noinline,used)) completion_future parallel_for_each(
-    const accelerator_view& av, const tiled_extent<2>& compute_domain, const Kernel& f) __CPU__ __HC__ {
+    const accelerator_view& av, const tiled_extent<2>& compute_domain, const Kernel& f, uint32_t lastKernel) __CPU__ __HC__ {
 #if __KALMAR_ACCELERATOR__ != 1
   // silently return in case the any dimension of the extent is 0
   if (compute_domain[0] == 0 || compute_domain[1] == 0)
@@ -7780,7 +7784,7 @@ __attribute__((noinline,used)) completion_future parallel_for_each(
     throw runtime_exception(Kalmar::__errorMsg_UnsupportedAccelerator, E_FAIL);
   }
   void *kernel = Kalmar::mcw_cxxamp_get_kernel<Kernel>(av.pQueue, f);
-  return completion_future(Kalmar::mcw_cxxamp_execute_kernel_with_dynamic_group_memory_async<Kernel, 2>(av.pQueue, ext, tile, f, kernel, compute_domain.get_dynamic_group_segment_size()));
+  return completion_future(Kalmar::mcw_cxxamp_execute_kernel_with_dynamic_group_memory_async<Kernel, 2>(av.pQueue, ext, tile, f, kernel, compute_domain.get_dynamic_group_segment_size(), lastKernel));
 #else //if __KALMAR_ACCELERATOR__ != 1
   tiled_index<2> this_is_used_to_instantiate_the_right_index;
   //to ensure functor has right operator() defined
@@ -7797,7 +7801,7 @@ __attribute__((noinline,used)) completion_future parallel_for_each(
 //3D parallel_for_each, tiled
 template <typename Kernel>
 __attribute__((noinline,used)) completion_future parallel_for_each(
-    const accelerator_view& av, const tiled_extent<3>& compute_domain, const Kernel& f) __CPU__ __HC__ {
+    const accelerator_view& av, const tiled_extent<3>& compute_domain, const Kernel& f, uint32_t lastKernel) __CPU__ __HC__ {
 #if __KALMAR_ACCELERATOR__ != 1
   // silently return in case the any dimension of the extent is 0
   if (compute_domain[0] == 0 || compute_domain[1] == 0 || compute_domain[2] == 0)
@@ -7826,7 +7830,7 @@ __attribute__((noinline,used)) completion_future parallel_for_each(
     throw runtime_exception(Kalmar::__errorMsg_UnsupportedAccelerator, E_FAIL);
   }
   void *kernel = Kalmar::mcw_cxxamp_get_kernel<Kernel>(av.pQueue, f);
-  return completion_future(Kalmar::mcw_cxxamp_execute_kernel_with_dynamic_group_memory_async<Kernel, 3>(av.pQueue, ext, tile, f, kernel, compute_domain.get_dynamic_group_segment_size()));
+  return completion_future(Kalmar::mcw_cxxamp_execute_kernel_with_dynamic_group_memory_async<Kernel, 3>(av.pQueue, ext, tile, f, kernel, compute_domain.get_dynamic_group_segment_size(), lastKernel));
 #else //if __KALMAR_ACCELERATOR__ != 1
   tiled_index<3> this_is_used_to_instantiate_the_right_index;
   //to ensure functor has right operator() defined

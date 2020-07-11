@@ -676,12 +676,12 @@ public:
 
     hsa_status_t dispatchKernelWaitComplete();
 
-    hsa_status_t dispatchKernelAsyncFromOp();
-    hsa_status_t dispatchKernelAsync(const void *hostKernarg, int hostKernargSize, bool allocSignal);
+    hsa_status_t dispatchKernelAsyncFromOp(uint32_t lastKernel = 1);
+    hsa_status_t dispatchKernelAsync(const void *hostKernarg, int hostKernargSize, bool allocSignal, uint32_t lastKernel = 1);
 
     // dispatch a kernel asynchronously
     hsa_status_t dispatchKernel(hsa_queue_t* lockedHsaQueue, const void *hostKernarg,
-                               int hostKernargSize, bool allocSignal);
+                               int hostKernargSize, bool allocSignal, uint32_t lastKernel = 1);
 
     // wait for the kernel to finish execution
     hsa_status_t waitComplete();
@@ -1183,11 +1183,11 @@ public:
         delete(dispatch);
     }
 
-    std::shared_ptr<KalmarAsyncOp> LaunchKernelAsync(void *ker, size_t nr_dim, size_t *global, size_t *local) override {
-        return LaunchKernelWithDynamicGroupMemoryAsync(ker, nr_dim, global, local, 0);
+    std::shared_ptr<KalmarAsyncOp> LaunchKernelAsync(void *ker, size_t nr_dim, size_t *global, size_t *local, uint32_t lastKernel) override {
+        return LaunchKernelWithDynamicGroupMemoryAsync(ker, nr_dim, global, local, 0, lastKernel);
     }
 
-    std::shared_ptr<KalmarAsyncOp> LaunchKernelWithDynamicGroupMemoryAsync(void *ker, size_t nr_dim, size_t *global, size_t *local, size_t dynamic_group_size) override {
+    std::shared_ptr<KalmarAsyncOp> LaunchKernelWithDynamicGroupMemoryAsync(void *ker, size_t nr_dim, size_t *global, size_t *local, size_t dynamic_group_size, uint32_t lastKernel) override {
         hsa_status_t status = HSA_STATUS_SUCCESS;
 
         HSADispatch *dispatch =
@@ -1214,7 +1214,7 @@ public:
 
 
         // dispatch the kernel
-        status = dispatch->dispatchKernelAsyncFromOp();
+        status = dispatch->dispatchKernelAsyncFromOp(lastKernel);
         STATUS_CHECK(status, __LINE__);
 
         // create a shared_ptr instance
@@ -3478,7 +3478,8 @@ HSAQueue::dispatch_hsa_kernel(const hsa_kernel_dispatch_packet_t *aql,
         needsSignal = (cf != nullptr);
     };
 
-    dispatch->dispatchKernelAsync(args, argSize, needsSignal);
+	uint32_t lastKernel = 1;
+    dispatch->dispatchKernelAsync(args, argSize, needsSignal, lastKernel);
 
     pushAsyncOp(sp_dispatch);
 
@@ -3601,7 +3602,7 @@ static void printKernarg(const void *kernarg_address, int bytesToPrint)
 // -  allocates signal, copies arguments into kernarg buffer, and places aql packet into queue.
 hsa_status_t
 HSADispatch::dispatchKernel(hsa_queue_t* lockedHsaQueue, const void *hostKernarg, 
-                            int hostKernargSize, bool allocSignal) {
+                            int hostKernargSize, bool allocSignal, uint32_t lastKernel) {
 
     hsa_status_t status = HSA_STATUS_SUCCESS;
     if (isDispatched) {
@@ -3689,7 +3690,10 @@ HSADispatch::dispatchKernel(hsa_queue_t* lockedHsaQueue, const void *hostKernarg
 
 
     // Ring door bell
-    hsa_signal_store_relaxed(lockedHsaQueue->doorbell_signal, index);
+    if (lastKernel == 1) {
+        printf("Ring the doorbell cause this is the last kernel\n");
+        hsa_signal_store_relaxed(lockedHsaQueue->doorbell_signal, index);
+    }
 
     isDispatched = true;
 
@@ -3776,13 +3780,13 @@ HSADispatch::dispatchKernelWaitComplete() {
 // Flavor used when launching dispatch with args and signal created by HCC
 // (As opposed to the dispatch_hsa_kernel path)
 inline hsa_status_t
-HSADispatch::dispatchKernelAsyncFromOp()
+HSADispatch::dispatchKernelAsyncFromOp(uint32_t lastKernel)
 {
-    return dispatchKernelAsync(arg_vec.data(), arg_vec.size(), true);
+    return dispatchKernelAsync(arg_vec.data(), arg_vec.size(), true, lastKernel);
 }
 
 inline hsa_status_t
-HSADispatch::dispatchKernelAsync(const void *hostKernarg, int hostKernargSize, bool allocSignal) {
+HSADispatch::dispatchKernelAsync(const void *hostKernarg, int hostKernargSize, bool allocSignal, uint32_t lastKernel) {
 
 
     if (HCC_SERIALIZE_KERNEL & 0x1) {
@@ -3801,7 +3805,7 @@ HSADispatch::dispatchKernelAsync(const void *hostKernarg, int hostKernargSize, b
         hsa_queue_t* rocrQueue = hsaQueue()->acquireLockedRocrQueue();
 
         // dispatch kernel
-        status = dispatchKernel(rocrQueue, hostKernarg, hostKernargSize, allocSignal);
+        status = dispatchKernel(rocrQueue, hostKernarg, hostKernargSize, allocSignal, lastKernel);
         STATUS_CHECK(status, __LINE__);
 
         hsaQueue()->releaseLockedRocrQueue();

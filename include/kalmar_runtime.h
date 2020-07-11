@@ -203,13 +203,13 @@ public:
   virtual void LaunchKernelWithDynamicGroupMemory(void *kernel, size_t dim_ext, size_t *ext, size_t *local_size, size_t dynamic_group_size) {}
 
   // async kernel launch with dynamic group memory
-  virtual std::shared_ptr<KalmarAsyncOp> LaunchKernelWithDynamicGroupMemoryAsync(void *kernel, size_t dim_ext, size_t *ext, size_t *local_size, size_t dynamic_group_size) { return nullptr; }
+  virtual std::shared_ptr<KalmarAsyncOp> LaunchKernelWithDynamicGroupMemoryAsync(void *kernel, size_t dim_ext, size_t *ext, size_t *local_size, size_t dynamic_group_size, uint32_t lastKernel = 1) { return nullptr; }
 
   // sync kernel launch
   virtual void LaunchKernel(void *kernel, size_t dim_ext, size_t *ext, size_t *local_size) {}
 
   // async kernel launch
-  virtual std::shared_ptr<KalmarAsyncOp> LaunchKernelAsync(void *kernel, size_t dim_ext, size_t *ext, size_t *local_size) { return LaunchKernelWithDynamicGroupMemoryAsync(kernel, dim_ext, ext, local_size, 0); }
+  virtual std::shared_ptr<KalmarAsyncOp> LaunchKernelAsync(void *kernel, size_t dim_ext, size_t *ext, size_t *local_size, uint32_t lastKernel = 1) { return LaunchKernelWithDynamicGroupMemoryAsync(kernel, dim_ext, ext, local_size, 0, lastKernel); }
 
   /// read data from device to host
   virtual void read(void* device, void* dst, size_t count, size_t offset) = 0;

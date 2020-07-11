@@ -39,7 +39,7 @@ static inline std::shared_ptr<KalmarQueue> get_availabe_que(const Kernel& f)
 template<typename Kernel, int dim_ext>
 inline std::shared_ptr<KalmarAsyncOp>
 mcw_cxxamp_launch_kernel_async(const std::shared_ptr<KalmarQueue>& pQueue, size_t *ext,
-  size_t *local_size, const Kernel& f) restrict(cpu,amp) {
+  size_t *local_size, const Kernel& f, uint32_t lastKernel = 1) restrict(cpu,amp) {
 #if __KALMAR_ACCELERATOR__ != 1
   //Invoke Kernel::__cxxamp_trampoline as an kernel
   //to ensure functor has right operator() defined
@@ -52,7 +52,7 @@ mcw_cxxamp_launch_kernel_async(const std::shared_ptr<KalmarQueue>& pQueue, size_
       kernel = CLAMP::CreateKernel(kernel_name, pQueue.get());
   }
   append_kernel(pQueue, f, kernel);
-  return pQueue->LaunchKernelAsync(kernel, dim_ext, ext, local_size);
+  return pQueue->LaunchKernelAsync(kernel, dim_ext, ext, local_size, lastKernel);
 #endif
 }
 #pragma clang diagnostic pop
@@ -115,10 +115,10 @@ template<typename Kernel, int dim_ext>
 inline std::shared_ptr<KalmarAsyncOp>
 mcw_cxxamp_execute_kernel_with_dynamic_group_memory_async(
   const std::shared_ptr<KalmarQueue>& pQueue, size_t *ext, size_t *local_size,
-  const Kernel& f, void *kernel, size_t dynamic_group_memory_size) restrict(cpu,amp) {
+  const Kernel& f, void *kernel, size_t dynamic_group_memory_size, uint32_t lastKernel = 1) restrict(cpu,amp) {
 #if __KALMAR_ACCELERATOR__ != 1
   append_kernel(pQueue, f, kernel);
-  return pQueue->LaunchKernelWithDynamicGroupMemoryAsync(kernel, dim_ext, ext, local_size, dynamic_group_memory_size);
+  return pQueue->LaunchKernelWithDynamicGroupMemoryAsync(kernel, dim_ext, ext, local_size, dynamic_group_memory_size, lastKernel);
 #endif // __KALMAR_ACCELERATOR__
 }
 
