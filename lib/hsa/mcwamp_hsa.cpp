@@ -802,8 +802,24 @@ struct RocrQueue {
         STATUS_CHECK(status, __LINE__);
     }
 
-    RocrQueue(hsa_agent_t agent, size_t queue_size, HSAQueue *hccQueue) 
+    RocrQueue(hsa_agent_t agent, size_t queue_size, HSAQueue *hccQueue, queue_priority priority)
+		: _priority(priority) 
     {
+
+        // Map queue_priority to hsa_amd_queue_priority_t
+        hsa_amd_queue_priority_t queue_priority;
+        switch (priority) {
+            case priority_low:
+                queue_priority = HSA_AMD_QUEUE_PRIORITY_LOW;
+                break;
+            case priority_high:
+                queue_priority = HSA_AMD_QUEUE_PRIORITY_HIGH;
+                break;
+            case priority_normal:
+            default:
+                queue_priority = HSA_AMD_QUEUE_PRIORITY_NORMAL;
+                break;
+        }
 
         assert(queue_size != 0);
 
@@ -813,6 +829,8 @@ struct RocrQueue {
         DBOUT(DB_QUEUE, "  " <<  __func__ << ": created an HSA command queue: " << _hwQueue << "\n");
 
         STATUS_CHECK(status, __LINE__);
+        status = hsa_amd_queue_set_priority(_hwQueue, queue_priority);
+        DBOUT(DB_QUEUE, "  " <<  __func__ << ": set priority for HSA command queue: " << _hwQueue << " to " << queue_priority << "\n");
 
         status = hsa_amd_profiling_set_profiler_enabled(_hwQueue, 1);
 
@@ -833,7 +851,6 @@ struct RocrQueue {
 
     hsa_status_t setCuMask(HSAQueue *hccQueue);
 
-
     hsa_queue_t *_hwQueue; // Pointer to the HSA queue this entry tracks.
 
     HSAQueue *_hccQueue;  // Pointe to the HCC "HSA" queue which is assigned to use the rocrQueue
@@ -843,6 +860,7 @@ struct RocrQueue {
     // Track profiling enabled state here. - no need now since all hw queues have profiling enabled.
     
     // Priority could be tracked here:
+	queue_priority _priority;
 };
 
 
@@ -931,7 +949,7 @@ private:
 
 
 public:
-    HSAQueue(KalmarDevice* pDev, hsa_agent_t agent, execute_order order) ;
+    HSAQueue(KalmarDevice* pDev, hsa_agent_t agent, execute_order order, queue_priority priority);
 
     bool nextKernelNeedsSysAcquire() const { return _nextKernelNeedsSysAcquire; };
     void setNextKernelNeedsSysAcquire(bool r) { _nextKernelNeedsSysAcquire = r; };
@@ -1763,7 +1781,7 @@ private:
     std::vector< std::weak_ptr<KalmarQueue> > queues;
 
     std::mutex                  rocrQueuesMutex; // protects rocrQueues
-    std::vector< RocrQueue *>    rocrQueues;
+    std::vector< RocrQueue *>    rocrQueues[3];
 
     pool_iterator ri;
 
@@ -1797,27 +1815,28 @@ public:
     class UnpinnedCopyEngine      *copy_engine[2]; // one for each direction.
     UnpinnedCopyEngine::CopyMode  copy_mode;
 
-
     // Creates or steals a rocrQueue and returns it in theif->rocrQueue
-    void createOrstealRocrQueue(Kalmar::HSAQueue *thief) {
+    void createOrstealRocrQueue(Kalmar::HSAQueue *thief, queue_priority priority = priority_normal) {
         
         std::lock_guard<std::mutex> (this->rocrQueuesMutex);
 
-        if (rocrQueues.size() < HCC_MAX_QUEUES) {
+        if (rocrQueues[priority].size() < HCC_MAX_QUEUES) {
 
+        	// TODO: Do we want the max queues for each priority to be different?
             // Allocate a new queue, we are belowthe HCC_MAX_QUEUES limit :
             //
 
-            auto rq = new RocrQueue(agent, this->queue_size, thief);
-            rocrQueues.push_back(rq);
+            RocrQueue *foundRQ = new RocrQueue(agent, this->queue_size, thief, priority);
 
-            DBOUT(DB_QUEUE, "Create new rocrQueue=" << rq << " for thief=" << thief << "\n")
+            rocrQueues[priority].push_back(foundRQ);
+
+            DBOUT(DB_QUEUE, "Create new rocrQueue=" << foundRQ << " for thief=" << thief << "\n")
 
         } else {
             RocrQueue *foundRQ = nullptr;
             while (!foundRQ) {
                 // First make a pass to see if we can find an unused queue:
-                for (auto rq : rocrQueues) {
+                for (auto rq : rocrQueues[priority]) {
                     if (rq->_hccQueue == nullptr) {
                         DBOUT(DB_QUEUE, "Found unused rocrQueue=" << rq << " for thief=" << thief << ".  hwQueue=" << rq->_hwQueue << "\n")
                         foundRQ = rq;
@@ -1825,7 +1844,7 @@ public:
                     }
                 } 
                 if (!foundRQ) {
-                    for (auto rq : rocrQueues) {
+                    for (auto rq : rocrQueues[priority]) {
                         if (rq->_hccQueue != thief)  {
                             auto victimHccQueue = rq->_hccQueue;
                             // victimHccQueue==nullptr should be detected by above loop.
@@ -1870,12 +1889,16 @@ public:
             // This defers expensive queue deallocation if an hccQueue that holds an hwQueue is destroyed - 
             // keep the hwqueue around until the number of hccQueues drops below the number of hwQueues
             // we have already allocated.
-            auto rqSize = rocrQueues.size();
+			// TODO: Do we want to track HCC queues independently for each priority?
+			// Or maybe modify queue stealing to steal unused HSA queue from other priority pools &
+			// change priority as required?
+			auto rqSize = rocrQueues[0].size()+rocrQueues[1].size()+rocrQueues[2].size();
             if (hccSize < rqSize)  {
-                auto iter = std::find(rocrQueues.begin(), rocrQueues.end(), rocrQueue);
-                assert (iter != rocrQueues.end()); 
+            	queue_priority priority = rocrQueue->_priority;
+                auto iter = std::find(rocrQueues[priority].begin(), rocrQueues[priority].end(), rocrQueue);
+                assert (iter != rocrQueues[priority].end()); 
                 // Remove the pointer from the list:
-                rocrQueues.erase(iter);
+                rocrQueues[priority].erase(iter);
                 DBOUT(DB_QUEUE, "removeRocrQueue-hard: rocrQueue=" << rocrQueue << " hccQueues/rocrQueues=" << hccSize << "/" << rqSize << "\n")
                 delete rocrQueue; // this will delete the HSA HW queue.
             } else {
@@ -2258,8 +2281,8 @@ public:
         return dispatch;
     }
 
-    std::shared_ptr<KalmarQueue> createQueue(execute_order order = execute_in_order) override {
-        auto hsaAv = new HSAQueue(this, agent, order);
+    std::shared_ptr<KalmarQueue> createQueue(execute_order order = execute_in_order, queue_priority priority = priority_normal) override {
+        auto hsaAv = new HSAQueue(this, agent, order, priority);
         std::shared_ptr<KalmarQueue> q =  std::shared_ptr<KalmarQueue>(hsaAv);
         queues_mutex.lock();
         queues.push_back(q);
@@ -2989,7 +3012,7 @@ namespace Kalmar {
 HSADevice::HSADevice(hsa_agent_t a, hsa_agent_t host, int x_accSeqNum) : KalmarDevice(access_type_read_write),
                                agent(a), programs(), max_tile_static_size(0),
                                queue_size(0), queues(), queues_mutex(),
-                               rocrQueues(0/*empty*/), rocrQueuesMutex(),
+                               rocrQueues(/*empty*/), rocrQueuesMutex(),
                                ri(),
                                useCoarseGrainedRegion(false),
                                kernargPool(), kernargPoolFlag(), kernargCursor(0), kernargPoolMutex(),
@@ -3217,8 +3240,8 @@ inline std::ostream& operator<<(std::ostream& os, const HSADispatch & op)
 }
 
 
-HSAQueue::HSAQueue(KalmarDevice* pDev, hsa_agent_t agent, execute_order order) : 
-    KalmarQueue(pDev, queuing_mode_automatic, order), 
+HSAQueue::HSAQueue(KalmarDevice* pDev, hsa_agent_t agent, execute_order order, queue_priority priority) : 
+    KalmarQueue(pDev, queuing_mode_automatic, order, priority),
     rocrQueue(nullptr),
     asyncOps(), opSeqNums(0), valid(true), _nextSyncNeedsSysRelease(false), _nextKernelNeedsSysAcquire(false), bufferKernelMap(), kernelBufferMap() 
 {
@@ -3229,7 +3252,7 @@ HSAQueue::HSAQueue(KalmarDevice* pDev, hsa_agent_t agent, execute_order order) :
         std::lock_guard<std::mutex> (this->qmutex);
 
         auto device = static_cast<Kalmar::HSADevice*>(this->getDev());
-        device->createOrstealRocrQueue(this);
+        device->createOrstealRocrQueue(this, priority);
     }
 
 
