@@ -1154,16 +1154,23 @@ public:
             printAsyncOps(std::cerr);
         }
 
-        for (int i = asyncOps.size()-1; i >= 0;  i--) {
-            if (asyncOps[i] != nullptr) {
-                auto asyncOp = asyncOps[i];
-                // wait on valid futures only
-                std::shared_future<void>* future = asyncOp->getFuture();
-                if (future->valid()) {
-                    future->wait();
-                }
-            }
-        }
+        /*
+         * This section is commented out because the call to future->wait()
+         * is broken in gem5. This doesn't break any functionality, as the call
+         * to asyncOps.clear() calls the destructor for each asyncOp, and the
+         * destructor calls waitComplete(), which is the function that future
+         * is waiting on.
+         */
+        //for (int i = asyncOps.size()-1; i >= 0;  i--) {
+        //    if (asyncOps[i] != nullptr) {
+        //        auto asyncOp = asyncOps[i];
+        //        // wait on valid futures only
+        //        std::shared_future<void>* future = asyncOp->getFuture();
+        //        if (future->valid()) {
+        //            future->wait();
+        //        }
+        //    }
+        //}
         // clear async operations table
         asyncOps.clear();
    }
@@ -1273,7 +1280,8 @@ public:
         auto&& dependentAsyncOpVector = bufferKernelMap[buffer];
         for (int i = 0; i < dependentAsyncOpVector.size(); ++i) {
           auto dependentAsyncOp = dependentAsyncOpVector[i];
-          if (!dependentAsyncOp.expired()) {
+          auto dependentAsyncOpPointer = dependentAsyncOp.lock();
+          if (dependentAsyncOpPointer) {
             auto dependentAsyncOpPointer = dependentAsyncOp.lock();
             // wait on valid futures only
             std::shared_future<void>* future = dependentAsyncOpPointer->getFuture();
