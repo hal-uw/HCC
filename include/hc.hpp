@@ -599,6 +599,11 @@ public:
         pQueue->dispatch_hsa_kernel(aql, args, argsize, cf);
     }
 
+    void ring_doorbell()
+    {
+        pQueue->ring_doorbell();
+    }
+
     /**
      * Set a CU affinity to specific command queues. 
      * The setting is permanent until the queue is destroyed or CU affinity is

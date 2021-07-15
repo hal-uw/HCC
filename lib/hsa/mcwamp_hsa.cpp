@@ -1560,6 +1560,8 @@ public:
                              const void * args, size_t argsize,
                              hc::completion_future *cf) override ;
 
+    void ring_doorbell() override;
+
     bool set_cu_mask(const std::vector<bool>& cu_mask) override {
         // get device's total compute unit count
         auto device = getDev();
@@ -3510,6 +3512,22 @@ HSAQueue::dispatch_hsa_kernel(const hsa_kernel_dispatch_packet_t *aql,
         *cf = hc::completion_future(sp_dispatch);
     }
 };
+
+void
+HSAQueue::ring_doorbell()
+{
+    hsa_queue_t* rocrQueue = acquireLockedRocrQueue();
+
+    uint64_t index = hsa_queue_load_write_index_relaxed(rocrQueue);
+
+    printf("Manually ringing the doorbell\n");
+    // index - 1 because index gets incremented by the dispatchKernel
+    // function. Without this, a call to hipDeviceSynchronize() would
+    // hang indefinitely
+    hsa_signal_store_relaxed(rocrQueue->doorbell_signal, index - 1);
+
+    releaseLockedRocrQueue();
+}
 
 } // namespace Kalmar
 
