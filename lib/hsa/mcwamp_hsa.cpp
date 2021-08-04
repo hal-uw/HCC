@@ -3733,7 +3733,7 @@ HSADispatch::dispatchKernel(hsa_queue_t* lockedHsaQueue, const void *hostKernarg
     // Ring door bell
     if (lastKernel == 1) {
         printf("Ring the doorbell cause this is the last kernel\n");
-        hsa_signal_store_relaxed(lockedHsaQueue->doorbell_signal, index);
+        //hsa_signal_store_relaxed(lockedHsaQueue->doorbell_signal, index);
     }
 
     isDispatched = true;
