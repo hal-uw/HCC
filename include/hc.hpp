@@ -161,6 +161,12 @@ public:
     queue_priority get_queue_priority() const { return pQueue->get_queue_priority(); }
 
     /**
+     * Returns the deadline for this accelerator_view
+     */
+    uint64_t get_queue_deadline() const { return pQueue->get_queue_deadline(); }
+    
+
+    /**
      * Returns a boolean value indicating whether the accelerator view when
      * passed to a parallel_for_each would result in automatic selection of an
      * appropriate execution target by the runtime. In other words, this is the
@@ -823,8 +829,8 @@ public:
      *                  See "Queuing Mode". The default value would be
      *                  queueing_mdoe_automatic if not specified.
      */
-    accelerator_view create_view(execute_order order = execute_in_order, queuing_mode mode = queuing_mode_automatic, queue_priority priority = priority_normal) {
-        auto pQueue = pDev->createQueue(order, priority);
+    accelerator_view create_view(execute_order order = execute_in_order, queuing_mode mode = queuing_mode_automatic, queue_priority priority = priority_normal, uint64_t deadline = -1) {
+        auto pQueue = pDev->createQueue(order, priority, deadline);
         pQueue->set_mode(mode);
         return pQueue;
     }

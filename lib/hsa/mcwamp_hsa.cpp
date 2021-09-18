@@ -802,8 +802,8 @@ struct RocrQueue {
         STATUS_CHECK(status, __LINE__);
     }
 
-    RocrQueue(hsa_agent_t agent, size_t queue_size, HSAQueue *hccQueue, queue_priority priority)
-		: _priority(priority) 
+    RocrQueue(hsa_agent_t agent, size_t queue_size, HSAQueue *hccQueue, queue_priority priority, uint64_t deadline)
+		: _priority(priority), _deadline(deadline)
     {
 
         // Map queue_priority to hsa_amd_queue_priority_t
@@ -831,6 +831,9 @@ struct RocrQueue {
         STATUS_CHECK(status, __LINE__);
         status = hsa_amd_queue_set_priority(_hwQueue, queue_priority);
         DBOUT(DB_QUEUE, "  " <<  __func__ << ": set priority for HSA command queue: " << _hwQueue << " to " << queue_priority << "\n");
+
+	status = hsa_amd_queue_set_deadline(_hwQueue, _deadline);
+        DBOUT(DB_QUEUE, "  " <<  __func__ << ": set deadline for HSA command queue: " << _hwQueue << " to " << deadline << "\n");
 
         status = hsa_amd_profiling_set_profiler_enabled(_hwQueue, 1);
 
@@ -861,6 +864,8 @@ struct RocrQueue {
     
     // Priority could be tracked here:
 	queue_priority _priority;
+
+    uint64_t _deadline;
 };
 
 
@@ -949,7 +954,7 @@ private:
 
 
 public:
-    HSAQueue(KalmarDevice* pDev, hsa_agent_t agent, execute_order order, queue_priority priority);
+    HSAQueue(KalmarDevice* pDev, hsa_agent_t agent, execute_order order, queue_priority priority, uint64_t deadline);
 
     bool nextKernelNeedsSysAcquire() const { return _nextKernelNeedsSysAcquire; };
     void setNextKernelNeedsSysAcquire(bool r) { _nextKernelNeedsSysAcquire = r; };
@@ -1818,7 +1823,7 @@ public:
     UnpinnedCopyEngine::CopyMode  copy_mode;
 
     // Creates or steals a rocrQueue and returns it in theif->rocrQueue
-    void createOrstealRocrQueue(Kalmar::HSAQueue *thief, queue_priority priority = priority_normal) {
+    void createOrstealRocrQueue(Kalmar::HSAQueue *thief, queue_priority priority = priority_normal, uint64_t deadline = -1) {
         
         std::lock_guard<std::mutex> (this->rocrQueuesMutex);
 
@@ -1828,7 +1833,7 @@ public:
             // Allocate a new queue, we are belowthe HCC_MAX_QUEUES limit :
             //
 
-            RocrQueue *foundRQ = new RocrQueue(agent, this->queue_size, thief, priority);
+            RocrQueue *foundRQ = new RocrQueue(agent, this->queue_size, thief, priority, deadline);
 
             rocrQueues[priority].push_back(foundRQ);
 
@@ -2283,8 +2288,8 @@ public:
         return dispatch;
     }
 
-    std::shared_ptr<KalmarQueue> createQueue(execute_order order = execute_in_order, queue_priority priority = priority_normal) override {
-        auto hsaAv = new HSAQueue(this, agent, order, priority);
+    std::shared_ptr<KalmarQueue> createQueue(execute_order order = execute_in_order, queue_priority priority = priority_normal, uint64_t deadline = -1) override {
+        auto hsaAv = new HSAQueue(this, agent, order, priority, deadline);
         std::shared_ptr<KalmarQueue> q =  std::shared_ptr<KalmarQueue>(hsaAv);
         queues_mutex.lock();
         queues.push_back(q);
@@ -3242,8 +3247,8 @@ inline std::ostream& operator<<(std::ostream& os, const HSADispatch & op)
 }
 
 
-HSAQueue::HSAQueue(KalmarDevice* pDev, hsa_agent_t agent, execute_order order, queue_priority priority) : 
-    KalmarQueue(pDev, queuing_mode_automatic, order, priority),
+HSAQueue::HSAQueue(KalmarDevice* pDev, hsa_agent_t agent, execute_order order, queue_priority priority, uint64_t deadline) : 
+    KalmarQueue(pDev, queuing_mode_automatic, order, priority, deadline),
     rocrQueue(nullptr),
     asyncOps(), opSeqNums(0), valid(true), _nextSyncNeedsSysRelease(false), _nextKernelNeedsSysAcquire(false), bufferKernelMap(), kernelBufferMap() 
 {
@@ -3254,7 +3259,7 @@ HSAQueue::HSAQueue(KalmarDevice* pDev, hsa_agent_t agent, execute_order order, q
         std::lock_guard<std::mutex> (this->qmutex);
 
         auto device = static_cast<Kalmar::HSADevice*>(this->getDev());
-        device->createOrstealRocrQueue(this, priority);
+        device->createOrstealRocrQueue(this, priority, deadline);
     }
 
 

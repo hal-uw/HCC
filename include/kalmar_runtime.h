@@ -199,8 +199,8 @@ class KalmarQueue
 {
 public:
 
-  KalmarQueue(KalmarDevice* pDev, queuing_mode mode = queuing_mode_automatic, execute_order order = execute_in_order, queue_priority priority = priority_normal)
-      : pDev(pDev), mode(mode), order(order), priority(priority) {}
+  KalmarQueue(KalmarDevice* pDev, queuing_mode mode = queuing_mode_automatic, execute_order order = execute_in_order, queue_priority priority = priority_normal, uint64_t deadline = -1)
+      : pDev(pDev), mode(mode), order(order), priority(priority), deadline(deadline) {}
 
   virtual ~KalmarQueue() {}
 
@@ -248,6 +248,8 @@ public:
   execute_order get_execute_order() const { return order; }
 
   queue_priority get_queue_priority() const { return priority; }
+
+  uint64_t get_queue_deadline() const { return deadline; }
 
   /// get number of pending async operations in the queue
   virtual int getPendingAsyncOps() { return 0; }
@@ -320,6 +322,7 @@ private:
   queuing_mode mode;
   execute_order order;
   queue_priority priority;
+  uint64_t deadline;
 };
 
 /// KalmarDevice
@@ -393,7 +396,7 @@ public:
     virtual bool check(size_t* size, size_t dim_ext) { return true; }
 
     /// create KalmarQueue from current device
-    virtual std::shared_ptr<KalmarQueue> createQueue(execute_order order = execute_in_order, queue_priority priority = priority_normal) = 0;
+    virtual std::shared_ptr<KalmarQueue> createQueue(execute_order order = execute_in_order, queue_priority priority = priority_normal, uint64_t deadline = -1) = 0;
     virtual ~KalmarDevice() {}
 
     std::shared_ptr<KalmarQueue> get_default_queue() {
@@ -487,7 +490,7 @@ public:
     bool is_emulated() const override { return true; }
     uint32_t get_version() const override { return 0; }
 
-    std::shared_ptr<KalmarQueue> createQueue(execute_order order = execute_in_order, queue_priority priority = priority_normal) override { return std::shared_ptr<KalmarQueue>(new CPUQueue(this)); }
+    std::shared_ptr<KalmarQueue> createQueue(execute_order order = execute_in_order, queue_priority priority = priority_normal, uint64_t deadline = -1) override { return std::shared_ptr<KalmarQueue>(new CPUQueue(this)); }
     void* create(size_t count, struct rw_info* /* not used */ ) override { return kalmar_aligned_alloc(0x1000, count); }
     void release(void* ptr, struct rw_info* /* nout used */) override { kalmar_aligned_free(ptr); }
     void* CreateKernel(const char* fun, KalmarQueue *queue) { return nullptr; }
