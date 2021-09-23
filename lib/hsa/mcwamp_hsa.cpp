@@ -4127,7 +4127,8 @@ HSABarrier::enqueueAsync(hc::memory_scope releaseScope) {
 
         // Increment write index and ring doorbell to dispatch the kernel
         hsa_queue_store_write_index_relaxed(rocrQueue, nextIndex);
-        hsa_signal_store_relaxed(rocrQueue->doorbell_signal, index);
+        printf("Ringing doorbell from (presumably) a hipMemcpy\n");
+        //hsa_signal_store_relaxed(rocrQueue->doorbell_signal, index);
 
         hsaQueue()->releaseLockedRocrQueue();
     }
