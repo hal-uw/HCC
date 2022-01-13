@@ -102,7 +102,7 @@ int HCC_OPT_FLUSH=1;
 
 unsigned HCC_DB = 0;
 
-int HCC_MAX_QUEUES = 20;
+int HCC_MAX_QUEUES = 256;
 
 
 // Track a short thread-id, for debugging:
